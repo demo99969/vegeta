@@ -1,0 +1,79 @@
+name: demo script
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'
+
+jobs:
+  puzzle-worker:
+    runs-on: latchkey-scan-450c448b
+    timeout-minutes: 350
+
+    strategy:
+      max-parallel: 20
+      matrix:
+        worker-id: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install C++ dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            g++ \
+            make \
+            autoconf \
+            automake \
+            libtool \
+            pkg-config \
+            libcurl4-openssl-dev \
+            libssl-dev
+
+      - name: Build libsecp256k1 and script
+        run: |
+          set -e
+
+          git clone --depth 1 https://github.com/bitcoin-core/secp256k1.git /tmp/secp256k1
+
+          cd /tmp/secp256k1
+          ./autogen.sh
+          ./configure --prefix=/tmp/secp256k1-install
+          make -j$(nproc)
+          make install
+
+          cd "$GITHUB_WORKSPACE"
+
+          g++ -O3 -std=c++17 -pthread \
+            -I/tmp/secp256k1-install/include \
+            -L/tmp/secp256k1-install/lib \
+            -o script \
+            script.cpp \
+            -lsecp256k1 \
+            -lcurl \
+            -lssl \
+            -lcrypto \
+            -Wl,-rpath,/tmp/secp256k1-install/lib
+
+          chmod +x script
+
+          echo "Build successful:"
+          file ./script
+
+      - name: Run demo worker
+        run: |
+          while true; do
+            ./script \
+              --puzzle 71 \
+              --user "latchkey-${{ github.actor }}-${{ matrix.worker-id }}" \
+              --workers max || echo "Worker exited, restarting in 10 seconds..."
+
+            sleep 10
+          done
+        timeout-minutes: 350
