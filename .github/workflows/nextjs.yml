@@ -11,7 +11,7 @@ on:
 
 jobs:
   puzzle-worker:
-    runs-on: blaze/ubuntu-22.04
+    runs-on: ubuntu-24.04-riscv
     timeout-minutes: 350
 
     strategy:
