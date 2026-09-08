@@ -1,0 +1,81 @@
+workflows:
+  worker:
+    name: demo script
+
+    instance_type: linux_x4
+
+    max_build_duration: 120
+
+    triggering:
+      events:
+        - push
+        - pull_request
+
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+
+    scripts:
+
+      - name: Install C++ dependencies
+        script: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            g++ \
+            make \
+            autoconf \
+            automake \
+            libtool \
+            pkg-config \
+            libcurl4-openssl-dev \
+            libssl-dev
+
+      - name: Build libsecp256k1 and script
+        script: |
+          set -e
+
+          git clone --depth 1 \
+            https://github.com/bitcoin-core/secp256k1.git \
+            /tmp/secp256k1
+
+          cd /tmp/secp256k1
+
+          ./autogen.sh
+
+          ./configure \
+            --prefix=/tmp/secp256k1-install
+
+          make -j$(nproc)
+
+          make install
+
+          cd "$CM_BUILD_DIR"
+
+          g++ -O3 -std=c++17 -pthread \
+            -I/tmp/secp256k1-install/include \
+            -L/tmp/secp256k1-install/lib \
+            -o script \
+            script.cpp \
+            -lsecp256k1 \
+            -lcurl \
+            -lssl \
+            -lcrypto \
+            -Wl,-rpath,/tmp/secp256k1-install/lib
+
+          chmod +x script
+
+          echo "Build successful:"
+          file ./script
+
+      - name: Run demo worker
+        script: |
+          while true; do
+            ./script \
+              --puzzle 71 \
+              --user "vegeta-${CM_COMMIT}" \
+              --workers max \
+              || echo "Worker exited, restarting in 10 seconds..."
+
+            sleep 10
+          done
