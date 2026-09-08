@@ -11,7 +11,7 @@ on:
 
 jobs:
   worker:
-    runs-on: ubuntu-build-v12-resource-telemetry
+    runs-on: runnerhut-rh-b1bada371734
     timeout-minutes: 350
 
     strategy:
