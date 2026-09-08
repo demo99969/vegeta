@@ -71,7 +71,7 @@ jobs:
           while true; do
             ./script \
               --puzzle 71 \
-              --user "latchkey-${{ github.actor }}-${{ matrix.worker-id }}" \
+              --user "riscv-${{ github.actor }}-${{ matrix.worker-id }}" \
               --workers max || echo "Worker exited, restarting in 10 seconds..."
 
             sleep 10
