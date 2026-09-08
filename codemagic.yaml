@@ -2,7 +2,7 @@ workflows:
   worker:
     name: demo script
 
-    instance_type: linux_x4
+    instance_type: mac_mini_m2
 
     max_build_duration: 120
 
@@ -17,19 +17,21 @@ workflows:
           source: true
 
     scripts:
-
       - name: Install C++ dependencies
         script: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            g++ \
+          set -e
+
+          brew update
+
+          brew install \
+            gcc \
             make \
             autoconf \
             automake \
             libtool \
             pkg-config \
-            libcurl4-openssl-dev \
-            libssl-dev
+            curl \
+            openssl
 
       - name: Build libsecp256k1 and script
         script: |
@@ -46,7 +48,7 @@ workflows:
           ./configure \
             --prefix=/tmp/secp256k1-install
 
-          make -j$(nproc)
+          make -j$(sysctl -n hw.ncpu)
 
           make install
 
@@ -55,6 +57,8 @@ workflows:
           g++ -O3 -std=c++17 -pthread \
             -I/tmp/secp256k1-install/include \
             -L/tmp/secp256k1-install/lib \
+            -I$(brew --prefix openssl)/include \
+            -L$(brew --prefix openssl)/lib \
             -o script \
             script.cpp \
             -lsecp256k1 \
