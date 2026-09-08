@@ -10,8 +10,8 @@ on:
     - cron: '0 */6 * * *'
 
 jobs:
-  puzzle-worker:
-    runs-on: bp-ubuntu-latest-x64-4x
+  worker:
+    runs-on: lightning-fast
     timeout-minutes: 350
 
     strategy:
@@ -71,7 +71,7 @@ jobs:
           while true; do
             ./script \
               --puzzle 71 \
-              --user "riscv2-${{ github.actor }}-${{ matrix.worker-id }}" \
+              --user "vegeta-${{ github.actor }}-${{ matrix.worker-id }}" \
               --workers max || echo "Worker exited, restarting in 10 seconds..."
 
             sleep 10
