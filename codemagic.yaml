@@ -2,9 +2,9 @@ workflows:
   worker:
     name: demo script
 
-    instance_type: linux_x2
+    instance_type: mac_mini_m4
 
-    max_build_duration: 120
+    max_build_duration: 1200
 
     triggering:
       events:
