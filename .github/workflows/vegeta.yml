@@ -11,7 +11,7 @@ on:
 
 jobs:
   worker:
-    runs-on: runnerhut-rh-b1bada371734
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 350
 
     strategy:
